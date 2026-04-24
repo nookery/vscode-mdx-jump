@@ -1,14 +1,23 @@
 {
   "name": "mdx-astro-jump",
   "displayName": "MDX Astro Jump",
-  "description": "Go to definition for Astro/Vue components used in MDX files.",
+  "description": "Go to Definition for Astro/Vue components used in MDX files.",
   "version": "0.0.1",
   "publisher": "colorfy",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.90.0"
   },
   "categories": [
     "Programming Languages"
+  ],
+  "keywords": [
+    "mdx",
+    "astro",
+    "vue",
+    "definition",
+    "go-to-definition",
+    "navigation"
   ],
   "activationEvents": [
     "onLanguage:mdx",
@@ -20,16 +29,40 @@
     "languages": [
       {
         "id": "mdx",
-        "aliases": ["MDX", "mdx"],
-        "extensions": [".mdx"]
+        "aliases": [
+          "MDX",
+          "mdx"
+        ],
+        "extensions": [
+          ".mdx"
+        ]
       }
     ]
   },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc -p ./",
     "watch": "tsc -w -p ./",
-    "lint": "tsc -p ./ --noEmit"
+    "lint": "tsc -p ./ --noEmit",
+    "prepublishOnly": "npm run build",
+    "package": "npx @vscode/vsce package",
+    "publish:patch": "npx @vscode/vsce publish patch",
+    "publish:minor": "npx @vscode/vsce publish minor",
+    "publish:major": "npx @vscode/vsce publish major"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/<your-account>/vscode-mdx-astro-jump.git"
+  },
+  "bugs": {
+    "url": "https://github.com/<your-account>/vscode-mdx-astro-jump/issues"
+  },
+  "homepage": "https://github.com/<your-account>/vscode-mdx-astro-jump#readme",
   "devDependencies": {
     "@types/node": "^20.16.0",
     "@types/vscode": "^1.90.0",
