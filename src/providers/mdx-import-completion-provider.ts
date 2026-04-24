@@ -1,6 +1,7 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { parseImports } from '../mdx/imports';
+import { getOpeningTagContext } from '../mdx/tag-context';
 import { getAstroPropInfos } from '../navigation/astro';
 import { resolveImport } from '../navigation/import-resolver';
 import { getVuePropInfos } from '../navigation/vue';
@@ -16,13 +17,24 @@ export const mdxImportCompletionProvider: vscode.CompletionItemProvider = {
     }
 
     const linePrefix = document.lineAt(position.line).text.slice(0, position.character);
-    if (!isImportContext(linePrefix)) {
+    const text = document.getText();
+    const offset = document.offsetAt(position);
+    const wordRange = document.getWordRangeAtPosition(position, /[A-Za-z_$][\w$]*/);
+    const typedWord = wordRange ? document.getText(wordRange) : '';
+    const isInTag = getOpeningTagContext(text, offset)?.componentName;
+    const isInImport = isImportContext(linePrefix);
+
+    // 支持两种场景：
+    // 1. import 语句补全（原有逻辑）
+    // 2. 组件标签/任意位置补全（新增自动导入）
+    if (!isInImport && !isInTag && !/^[A-Z]/.test(typedWord)) {
       return [];
     }
 
     const files = await vscode.workspace.findFiles(COMPONENT_FILE_GLOB, COMPONENT_EXCLUDE_GLOB, 2000);
     const itemsByName = new Map<string, { item: vscode.CompletionItem; priority: number }>();
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+    const existingImports = parseImports(text);
 
     for (const uri of files) {
       if (uri.fsPath === document.uri.fsPath) {
@@ -34,13 +46,31 @@ export const mdxImportCompletionProvider: vscode.CompletionItemProvider = {
         continue;
       }
 
+      // 过滤已导入的组件
+      if (existingImports.some((imp) => imp.localName === componentName)) {
+        continue;
+      }
+
       const importPath = toImportPath(document.uri.fsPath, uri.fsPath, workspaceFolder);
       const priority = getComponentPriority(uri.fsPath);
+
+      // 根据场景决定触发字符和插入文本
+      const isAutoImport = !isInImport;
+      const insertText = isAutoImport
+        ? componentName // 只插入组件名，import 语句用 additionalTextEdits 添加
+        : `${componentName} from '${importPath}';`;
+
       const item = new vscode.CompletionItem(componentName, vscode.CompletionItemKind.Class);
       item.detail = importPath;
-      item.insertText = `${componentName} from '${importPath}';`;
+      item.insertText = insertText;
       item.filterText = `${componentName} ${importPath}`;
       item.sortText = `${priority.toString().padStart(2, '0')}_${componentName}`;
+
+      // 自动导入场景：添加 import 语句到文件顶部
+      if (isAutoImport) {
+        const importEdit = calculateImportEdit(document, componentName, importPath);
+        item.additionalTextEdits = [importEdit];
+      }
 
       const existing = itemsByName.get(componentName);
       if (!existing || priority < existing.priority) {
@@ -51,6 +81,41 @@ export const mdxImportCompletionProvider: vscode.CompletionItemProvider = {
     return Array.from(itemsByName.values()).map((entry) => entry.item);
   },
 };
+
+/**
+ * 计算 import 语句的编辑位置，插入到现有 import 块的末尾
+ */
+function calculateImportEdit(
+  document: vscode.TextDocument,
+  componentName: string,
+  importPath: string
+): vscode.TextEdit {
+  const text = document.getText();
+  const importLine = `import ${componentName} from '${importPath}';\n`;
+
+  // 查找最后一个 import 语句的位置
+  const importRe = /^\s*import\s+/gm;
+  let lastImportEnd = 0;
+  for (const match of text.matchAll(importRe)) {
+    lastImportEnd = document.positionAt(match.index ?? 0).line;
+  }
+
+  if (lastImportEnd > 0) {
+    // 插入到最后一个 import 之后
+    const insertLine = lastImportEnd + 1;
+    return vscode.TextEdit.insert(new vscode.Position(insertLine, 0), importLine);
+  }
+
+  // 没有 import 语句，插入到 frontmatter 之后或文件开头
+  const frontmatterMatch = text.match(/^---\n[\s\S]*?\n---\n?/);
+  if (frontmatterMatch) {
+    const frontmatterEnd = frontmatterMatch[0].split('\n').length - 1;
+    return vscode.TextEdit.insert(new vscode.Position(frontmatterEnd, 0), importLine);
+  }
+
+  // 插入到文件开头
+  return vscode.TextEdit.insert(new vscode.Position(0, 0), importLine);
+}
 
 function getPropCompletionItems(
   document: vscode.TextDocument,
