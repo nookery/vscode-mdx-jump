@@ -1,7 +1,7 @@
 {
-  "name": "mdx-astro-jump",
-  "displayName": "MDX Astro Jump",
-  "description": "Go to Definition for Astro/Vue components used in MDX files.",
+  "name": "mdx-jump",
+  "displayName": "MDX Jump",
+  "description": "Go to Definition for components used in MDX files.",
   "version": "0.0.6",
   "publisher": "Coffic",
   "license": "MIT",
@@ -13,8 +13,6 @@
   ],
   "keywords": [
     "mdx",
-    "astro",
-    "vue",
     "definition",
     "go-to-definition",
     "navigation"
@@ -57,12 +55,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/<your-account>/vscode-mdx-astro-jump.git"
+    "url": "https://github.com/nookery/vscode-mdx-jump.git"
   },
   "bugs": {
-    "url": "https://github.com/<your-account>/vscode-mdx-astro-jump/issues"
+    "url": "https://github.com/nookery/vscode-mdx-jump/issues"
   },
-  "homepage": "https://github.com/<your-account>/vscode-mdx-astro-jump#readme",
+  "homepage": "https://github.com/nookery/vscode-mdx-jump",
   "devDependencies": {
     "@types/node": "^20.16.0",
     "@types/vscode": "^1.90.0",
