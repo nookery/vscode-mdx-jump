@@ -5,11 +5,19 @@ A VS Code extension that adds **Go to Definition** support for Astro/Vue compone
 ## Features
 
 - In an `.mdx` file, place cursor on component tag like `<Projects />` and run **Go to Definition** (`F12`).
+- In an `.mdx` file, place cursor on Astro component props like `<Projects title="x" />` and run **Go to Definition** (`F12`) to jump to the `Props` declaration in the `.astro` file.
 - Resolves default imports such as:
   - Relative paths: `../../components/Projects.vue`
   - Aliased paths: `@/components/...` (tries `<workspace>/src` first, then workspace root)
 - Supports target file extensions:
   - `.astro`, `.vue`, `.tsx`, `.ts`, `.jsx`, `.js`
+- For `.astro` files, prop definition jump supports:
+  - `interface Props { ... }`
+  - `type Props = { ... }`
+- For `.vue` files, prop definition jump supports:
+  - `defineProps<{ ... }>()`
+  - `defineProps({ ... })`
+  - `props: { ... }` (Options API)
 
 ## Quick Start (Local)
 
