@@ -1,0 +1,38 @@
+{
+  "name": "mdx-astro-jump",
+  "displayName": "MDX Astro Jump",
+  "description": "Go to definition for Astro/Vue components used in MDX files.",
+  "version": "0.0.1",
+  "publisher": "colorfy",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:mdx",
+    "onLanguage:markdown",
+    "onLanguage:markdown.mdx"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "mdx",
+        "aliases": ["MDX", "mdx"],
+        "extensions": [".mdx"]
+      }
+    ]
+  },
+  "scripts": {
+    "build": "tsc -p ./",
+    "watch": "tsc -w -p ./",
+    "lint": "tsc -p ./ --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.0",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.6.2"
+  }
+}
