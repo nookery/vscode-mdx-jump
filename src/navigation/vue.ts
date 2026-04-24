@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as vscode from 'vscode';
 import { findMatchingBrace, findPropertyInBlock, offsetToPosition } from './common';
+import { PropInfoMap } from './astro';
 
 export function findVuePropDefinition(vueFilePath: string, propName: string): vscode.Location | null {
   let text = '';
@@ -43,23 +44,28 @@ export function findVuePropDefinition(vueFilePath: string, propName: string): vs
 }
 
 export function getVueProps(vueFilePath: string): Set<string> {
+  const infos = getVuePropInfos(vueFilePath);
+  return new Set<string>(infos.keys());
+}
+
+export function getVuePropInfos(vueFilePath: string): PropInfoMap {
   let text = '';
   try {
     text = fs.readFileSync(vueFilePath, 'utf8');
   } catch {
-    return new Set<string>();
+    return new Map<string, string | undefined>();
   }
 
   const scriptBlock = findScriptBlock(text);
   if (!scriptBlock) {
-    return new Set<string>();
+    return new Map<string, string | undefined>();
   }
 
   const scriptText = text.slice(scriptBlock.start, scriptBlock.end);
-  const names = new Set<string>();
-  collectFromDefineProps(text, scriptText, scriptBlock.start, names);
-  collectFromOptionsApiProps(text, scriptText, scriptBlock.start, names);
-  return names;
+  const info = new Map<string, string | undefined>();
+  collectFromDefineProps(text, scriptText, scriptBlock.start, info);
+  collectFromOptionsApiProps(text, scriptText, scriptBlock.start, info);
+  return info;
 }
 
 function findScriptBlock(text: string): { start: number; end: number } | null {
@@ -139,7 +145,7 @@ function collectFromDefineProps(
   fileText: string,
   scriptText: string,
   scriptStartOffset: number,
-  names: Set<string>
+  names: PropInfoMap
 ): void {
   const namedTypeMatch = /defineProps\s*<\s*([A-Za-z_$][\w$]*)\s*>/.exec(scriptText);
   if (namedTypeMatch) {
@@ -233,7 +239,7 @@ function collectFromOptionsApiProps(
   fileText: string,
   scriptText: string,
   scriptStartOffset: number,
-  names: Set<string>
+  names: PropInfoMap
 ): void {
   const propsMatch = /(?:^|\n)\s*props\s*:\s*\{/.exec(scriptText);
   if (!propsMatch) {
@@ -250,17 +256,12 @@ function collectFromOptionsApiProps(
   collectProperties(fileText, openBraceInFile + 1, closeBraceInFile, names);
 }
 
-function collectProperties(
-  text: string,
-  blockStart: number,
-  blockEnd: number,
-  names: Set<string>
-): void {
+function collectProperties(text: string, blockStart: number, blockEnd: number, names: PropInfoMap): void {
   const body = text.slice(blockStart, blockEnd);
-  const propertyRe = /(?:^|\n)\s*([A-Za-z_$][\w$]*)\??\s*:/g;
+  const propertyRe = /(?:^|\n)\s*([A-Za-z_$][\w$]*)\??\s*:\s*([^,\n}]+)/g;
   for (const match of body.matchAll(propertyRe)) {
     if (match[1]) {
-      names.add(match[1]);
+      names.set(match[1], match[2]?.trim());
     }
   }
 }

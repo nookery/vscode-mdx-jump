@@ -2,6 +2,8 @@ import * as fs from 'node:fs';
 import * as vscode from 'vscode';
 import { findMatchingBrace, findPropertyInBlock, offsetToPosition } from './common';
 
+export type PropInfoMap = Map<string, string | undefined>;
+
 export function findAstroPropDefinition(astroFilePath: string, propName: string): vscode.Location | null {
   const parsed = parseAstroPropsFile(astroFilePath);
   if (!parsed) {
@@ -18,12 +20,17 @@ export function findAstroPropDefinition(astroFilePath: string, propName: string)
 }
 
 export function getAstroProps(astroFilePath: string): Set<string> {
+  const infos = getAstroPropInfos(astroFilePath);
+  return new Set<string>(infos.keys());
+}
+
+export function getAstroPropInfos(astroFilePath: string): PropInfoMap {
   const parsed = parseAstroPropsFile(astroFilePath);
   if (!parsed) {
-    return new Set<string>();
+    return new Map<string, string | undefined>();
   }
 
-  return collectProperties(parsed.text, parsed.block.start, parsed.block.end);
+  return collectPropertyInfo(parsed.text, parsed.block.start, parsed.block.end);
 }
 
 function parseAstroPropsFile(astroFilePath: string): { text: string; block: { start: number; end: number } } | null {
@@ -64,16 +71,16 @@ function findPropsBlock(text: string): { start: number; end: number } | null {
   return null;
 }
 
-function collectProperties(text: string, blockStart: number, blockEnd: number): Set<string> {
-  const names = new Set<string>();
+function collectPropertyInfo(text: string, blockStart: number, blockEnd: number): PropInfoMap {
+  const info = new Map<string, string | undefined>();
   const body = text.slice(blockStart, blockEnd);
-  const propertyRe = /(?:^|\n)\s*([A-Za-z_$][\w$]*)\??\s*:/g;
+  const propertyRe = /(?:^|\n)\s*([A-Za-z_$][\w$]*)\??\s*:\s*([^;\n,}]+)/g;
 
   for (const match of body.matchAll(propertyRe)) {
     if (match[1]) {
-      names.add(match[1]);
+      info.set(match[1], match[2]?.trim());
     }
   }
 
-  return names;
+  return info;
 }

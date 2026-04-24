@@ -8,6 +8,9 @@ A VS Code extension that adds **Go to Definition** support for Astro/Vue compone
 - In an `.mdx` file, type `import ` and get component import completion suggestions. Selecting one inserts `import ComponentName from '...';`.
   - Prioritizes components under `src/components` and `components`.
   - Uses `@/` import paths when target file is under `<workspace>/src`.
+- In an `.mdx` component tag, typing a prop prefix (for example `<Projects a`) suggests matching props from imported `.astro` / `.vue` component definitions.
+  - Already-used props in the same tag are filtered out from suggestions.
+  - Completion details show prop type when it can be inferred from component definitions.
 - In an `.mdx` file, top-level ESM lines get semantic highlighting for common patterns:
   - `import Component from 'path'`
   - `import { A, B as C } from 'path'`
