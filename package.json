@@ -2,7 +2,7 @@
   "name": "mdx-jump",
   "displayName": "MDX Jump",
   "description": "Go to Definition for components used in MDX files.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "Coffic",
   "license": "MIT",
   "engines": {
