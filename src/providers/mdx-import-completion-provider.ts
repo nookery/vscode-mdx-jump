@@ -84,6 +84,7 @@ export const mdxImportCompletionProvider: vscode.CompletionItemProvider = {
 
 /**
  * 计算 import 语句的编辑位置，插入到现有 import 块的末尾
+ * 同时避开代码块（```）和 Frontmatter 区域，防止错误插入到代码示例中
  */
 function calculateImportEdit(
   document: vscode.TextDocument,
@@ -92,28 +93,61 @@ function calculateImportEdit(
 ): vscode.TextEdit {
   const text = document.getText();
   const importLine = `import ${componentName} from '${importPath}';\n`;
+  const lines = text.split('\n');
 
-  // 查找最后一个 import 语句的位置
-  const importRe = /^\s*import\s+/gm;
-  let lastImportEnd = 0;
-  for (const match of text.matchAll(importRe)) {
-    lastImportEnd = document.positionAt(match.index ?? 0).line;
+  let inCodeBlock = false;
+  let inFrontmatter = false;
+  let lastImportLineIndex = -1;
+  let frontmatterEndIndex = -1;
+
+  // 检查 Frontmatter 起始
+  if (lines.length > 0 && lines[0].trim() === '---') {
+    inFrontmatter = true;
   }
 
-  if (lastImportEnd > 0) {
-    // 插入到最后一个 import 之后
-    const insertLine = lastImportEnd + 1;
-    return vscode.TextEdit.insert(new vscode.Position(insertLine, 0), importLine);
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // 处理 Frontmatter 结束
+    if (inFrontmatter && i > 0 && line.trim() === '---') {
+      inFrontmatter = false;
+      frontmatterEndIndex = i;
+      continue;
+    }
+
+    // 跳过 Frontmatter 内部内容
+    if (inFrontmatter) {
+      continue;
+    }
+
+    // 处理代码块边界
+    if (line.trim().startsWith('```')) {
+      inCodeBlock = !inCodeBlock;
+      continue;
+    }
+
+    // 跳过代码块内部
+    if (inCodeBlock) {
+      continue;
+    }
+
+    // 在非代码块、非 Frontmatter 区域寻找 import 语句
+    if (line.match(/^\s*import\s+/)) {
+      lastImportLineIndex = i;
+    }
   }
 
-  // 没有 import 语句，插入到 frontmatter 之后或文件开头
-  const frontmatterMatch = text.match(/^---\n[\s\S]*?\n---\n?/);
-  if (frontmatterMatch) {
-    const frontmatterEnd = frontmatterMatch[0].split('\n').length - 1;
-    return vscode.TextEdit.insert(new vscode.Position(frontmatterEnd, 0), importLine);
+  if (lastImportLineIndex >= 0) {
+    // 找到 import，追加到最后一个 import 之后
+    return vscode.TextEdit.insert(new vscode.Position(lastImportLineIndex + 1, 0), importLine);
   }
 
-  // 插入到文件开头
+  // 没找到 import，尝试插入到 Frontmatter 之后
+  if (frontmatterEndIndex >= 0) {
+    return vscode.TextEdit.insert(new vscode.Position(frontmatterEndIndex + 1, 0), importLine);
+  }
+
+  // 否则插入到文件开头
   return vscode.TextEdit.insert(new vscode.Position(0, 0), importLine);
 }
 
