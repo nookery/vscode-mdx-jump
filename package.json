@@ -2,7 +2,7 @@
   "name": "mdx-astro-jump",
   "displayName": "MDX Astro Jump",
   "description": "Go to Definition for Astro/Vue components used in MDX files.",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "publisher": "Coffic",
   "license": "MIT",
   "engines": {
