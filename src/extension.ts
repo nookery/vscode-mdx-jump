@@ -8,6 +8,7 @@ import {
 } from './providers/mdx-semantic-tokens-provider';
 import { registerMdxPropDiagnostics } from './providers/mdx-prop-diagnostics';
 import { registerMdxFormatter } from './providers/mdx-format-provider';
+import { registerMdxHover } from './providers/mdx-hover-provider';
 
 export function activate(context: vscode.ExtensionContext): void {
   const provider = vscode.languages.registerDefinitionProvider(MDX_SELECTORS, mdxDefinitionProvider);
@@ -26,6 +27,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(semanticProvider);
   registerMdxPropDiagnostics(context);
   registerMdxFormatter(context);
+  registerMdxHover(context);
 }
 
 export function deactivate(): void {}
