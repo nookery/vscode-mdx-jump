@@ -3,7 +3,7 @@
   "displayName": "MDX Astro Jump",
   "description": "Go to Definition for Astro/Vue components used in MDX files.",
   "version": "0.0.3",
-  "publisher": "colorfy",
+  "publisher": "Coffic",
   "license": "MIT",
   "engines": {
     "vscode": "^1.90.0"
