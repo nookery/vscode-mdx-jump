@@ -44,12 +44,7 @@ export function activate(context: vscode.ExtensionContext): void {
     },
   });
 
-  const codeLensProvider = vscode.languages.registerCodeLensProvider(
-    MDX_SELECTORS,
-    new MdxImportCodeLensProvider()
-  );
-
-  context.subscriptions.push(provider, codeLensProvider);
+  context.subscriptions.push(provider);
 }
 
 export function deactivate(): void {}
@@ -121,35 +116,3 @@ function resolveCandidate(basePathNoExt: string): string | null {
   return null;
 }
 
-class MdxImportCodeLensProvider implements vscode.CodeLensProvider {
-  provideCodeLenses(document: vscode.TextDocument): vscode.ProviderResult<vscode.CodeLens[]> {
-    const text = document.getText();
-    const imports = parseImports(text);
-    if (imports.length === 0) {
-      return [];
-    }
-
-    const lenses: vscode.CodeLens[] = [];
-    for (const item of imports) {
-      if (!/^[A-Z]/.test(item.localName)) {
-        continue;
-      }
-
-      const target = resolveImport(document.uri.fsPath, item.source);
-      if (!target) {
-        continue;
-      }
-
-      const range = new vscode.Range(item.importLine, 0, item.importLine, 0);
-      lenses.push(
-        new vscode.CodeLens(range, {
-          title: `Open ${item.localName}`,
-          command: 'vscode.open',
-          arguments: [vscode.Uri.file(target)],
-        })
-      );
-    }
-
-    return lenses;
-  }
-}

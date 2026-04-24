@@ -14,8 +14,7 @@ A VS Code extension that adds **Go to Definition** support for Astro/Vue compone
 
 ## Quick Start (Local)
 
-1. Open this folder in VS Code:
-   - `/Users/colorfy/Code/CofficLab/vscode-mdx-astro-jump`
+1. Open this folder in VS Code
 2. Install deps:
 
 ```bash
