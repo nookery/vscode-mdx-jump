@@ -3,6 +3,30 @@ import * as vscode from 'vscode';
 import { findMatchingBrace, findPropertyInBlock, offsetToPosition } from './common';
 
 export function findAstroPropDefinition(astroFilePath: string, propName: string): vscode.Location | null {
+  const parsed = parseAstroPropsFile(astroFilePath);
+  if (!parsed) {
+    return null;
+  }
+
+  const property = findPropertyInBlock(parsed.text, parsed.block.start, parsed.block.end, propName);
+  if (!property) {
+    return null;
+  }
+
+  const position = offsetToPosition(parsed.text, property.offset);
+  return new vscode.Location(vscode.Uri.file(astroFilePath), position);
+}
+
+export function getAstroProps(astroFilePath: string): Set<string> {
+  const parsed = parseAstroPropsFile(astroFilePath);
+  if (!parsed) {
+    return new Set<string>();
+  }
+
+  return collectProperties(parsed.text, parsed.block.start, parsed.block.end);
+}
+
+function parseAstroPropsFile(astroFilePath: string): { text: string; block: { start: number; end: number } } | null {
   let text = '';
   try {
     text = fs.readFileSync(astroFilePath, 'utf8');
@@ -10,18 +34,12 @@ export function findAstroPropDefinition(astroFilePath: string, propName: string)
     return null;
   }
 
-  const propsBlock = findPropsBlock(text);
-  if (!propsBlock) {
+  const block = findPropsBlock(text);
+  if (!block) {
     return null;
   }
 
-  const property = findPropertyInBlock(text, propsBlock.start, propsBlock.end, propName);
-  if (!property) {
-    return null;
-  }
-
-  const position = offsetToPosition(text, property.offset);
-  return new vscode.Location(vscode.Uri.file(astroFilePath), position);
+  return { text, block };
 }
 
 function findPropsBlock(text: string): { start: number; end: number } | null {
@@ -44,4 +62,18 @@ function findPropsBlock(text: string): { start: number; end: number } | null {
   }
 
   return null;
+}
+
+function collectProperties(text: string, blockStart: number, blockEnd: number): Set<string> {
+  const names = new Set<string>();
+  const body = text.slice(blockStart, blockEnd);
+  const propertyRe = /(?:^|\n)\s*([A-Za-z_$][\w$]*)\??\s*:/g;
+
+  for (const match of body.matchAll(propertyRe)) {
+    if (match[1]) {
+      names.add(match[1]);
+    }
+  }
+
+  return names;
 }
