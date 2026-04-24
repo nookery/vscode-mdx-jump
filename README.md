@@ -10,7 +10,6 @@ A VS Code extension that adds **Go to Definition** support for Astro/Vue compone
   - Aliased paths: `@/components/...` (tries `<workspace>/src` first, then workspace root)
 - Supports target file extensions:
   - `.astro`, `.vue`, `.tsx`, `.ts`, `.jsx`, `.js`
-- Adds lightweight import CodeLens: `Open <ComponentName>`.
 
 ## Quick Start (Local)
 
@@ -18,13 +17,13 @@ A VS Code extension that adds **Go to Definition** support for Astro/Vue compone
 2. Install deps:
 
 ```bash
-npm install
+pnpm install
 ```
 
 3. Build:
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 4. Press `F5` to launch Extension Development Host.
@@ -38,7 +37,10 @@ npm run build
    - `homepage`
 2. Create a publisher in Visual Studio Marketplace.
 3. Create an Azure DevOps PAT with Marketplace publish permission.
-4. Login and publish:
+4. Add repository secret in GitHub: `VSCE_PAT`.
+5. Push to `main` to trigger auto publish (workflow will auto bump patch version).
+
+Manual publish (optional):
 
 ```bash
 npx @vscode/vsce login <publisher>
