@@ -1,4 +1,4 @@
-# MDX Astro Jump
+# MDX Jump
 
 A VS Code extension that adds **Go to Definition** support for Astro/Vue components used in `.mdx` files.
 
