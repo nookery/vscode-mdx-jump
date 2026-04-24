@@ -12,37 +12,57 @@ export function registerMdxHover(context: vscode.ExtensionContext): void {
     provideHover(document, position): vscode.ProviderResult<vscode.Hover> {
       const text = document.getText();
       const offset = document.offsetAt(position);
-
-      // 获取光标处的单词
-      const wordRange = document.getWordRangeAtPosition(position, /[A-Za-z_$][\w$]*/);
+      const wordRange = document.getWordRangeAtPosition(position, /[A-Za-z_$][\w$:@.-]*/);
       if (!wordRange) return null;
 
-      const word = document.getText(wordRange);
-      // 仅处理首字母大写的组件名
-      if (!/^[A-Z]/.test(word)) return null;
-
-      // 匹配导入的组件
-      const imports = parseImports(text);
-      const imp = imports.find((it) => it.localName === word);
-      if (!imp) return null;
-
-      // 解析文件路径
-      const resolved = resolveImport(document.uri.fsPath, imp.source);
-      if (!resolved) return null;
-
-      // 判断是否在组件标签内，以便决定是否显示 Props
+      const rawWord = document.getText(wordRange);
+      // 清理 Vue/Astro 指令前缀或赋值符号，提取纯属性名
+      const propName = rawWord.replace(/^[@:]/, '').split('=')[0].split(' ')[0];
       const tagContext = getOpeningTagContext(text, offset);
-      const isInTag = tagContext?.componentName === word;
 
-      const markdown = buildHoverContent(resolved, imp.source, word, isInTag);
-      return new vscode.Hover(markdown);
+      // 1. 处理组件名 Hover (import 语句或 <Component />)
+      if (/^[A-Z]/.test(rawWord)) {
+        const imp = parseImports(text).find((it) => it.localName === rawWord);
+        if (imp) {
+          const resolved = resolveImport(document.uri.fsPath, imp.source);
+          if (resolved) {
+            return new vscode.Hover(
+              buildComponentHover(resolved, imp.source, rawWord, tagContext?.componentName === rawWord)
+            );
+          }
+        }
+      }
+
+      // 2. 处理组件属性 Hover
+      if (tagContext?.isInAttributes && tagContext.componentName) {
+        const imp = parseImports(text).find((it) => it.localName === tagContext.componentName);
+        if (imp) {
+          const resolved = resolveImport(document.uri.fsPath, imp.source);
+          if (resolved) {
+            const ext = path.extname(resolved);
+            const props =
+              ext === '.astro'
+                ? getAstroPropInfos(resolved)
+                : ext === '.vue'
+                ? getVuePropInfos(resolved)
+                : new Map<string, string | undefined>();
+
+            const propType = props.get(propName);
+            if (propType !== undefined) {
+              return new vscode.Hover(buildPropHover(propName, propType, tagContext.componentName));
+            }
+          }
+        }
+      }
+
+      return null;
     },
   });
 
   context.subscriptions.push(provider);
 }
 
-function buildHoverContent(
+function buildComponentHover(
   resolvedPath: string,
   importSource: string,
   componentName: string,
@@ -68,6 +88,18 @@ function buildHoverContent(
     }
   }
 
+  return content;
+}
+
+function buildPropHover(propName: string, propType: string | undefined, componentName: string): vscode.MarkdownString {
+  const content = new vscode.MarkdownString();
+  content.isTrusted = true;
+
+  content.appendMarkdown(`**\`${propName}\`**`);
+  if (propType) {
+    content.appendMarkdown(`: \`${propType}\``);
+  }
+  content.appendMarkdown(`\n\n_来自组件 \`${componentName}\`_`);
   return content;
 }
 
